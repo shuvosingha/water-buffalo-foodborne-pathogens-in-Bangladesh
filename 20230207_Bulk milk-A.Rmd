@@ -1,0 +1,1973 @@
+---
+title: "Milk chain Zoonotic pathogens"
+author: "Shuvo Singha"
+date: "2022-12-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+## Installing R packages
+
+```{r installing package}
+
+#install.packages ("ggpubr")
+
+
+```
+
+## Loading the library
+
+```{r loading package}
+
+library(lme4) # glmer
+library(car)  # Anova
+library(multcomp)
+library(multcompView)
+library(pROC)
+library(emmeans)
+library(lmerTest)
+library(ggplot2)
+library(gmodels)
+library(ggpubr)
+library(sjstats)
+library(AUC)
+library(plyr)
+library(ggpubr)
+
+```
+
+## Selecting working directory
+
+```{r reading in data}
+
+setwd("D:/Current/Mizan Sir/Buffalo project/Protocol/4. Zoonotic pathogen and microbiome study UNIMI/Data analysis/R")
+
+```
+
+## Importing dataset
+
+```{r reading in data}
+# data=read.csv("A.csv", header=T, sep=",")
+
+data=read.csv("A_uncoded.csv", header=T, sep=",")
+
+#Cross checking data structure
+#use the str command to produce a summary of the dataset:
+str(data)
+
+```
+
+## Outcome Variable descriptions
+
+```{r performing summary statistics of continuous outcome variables}
+
+# BMSCC and Bacterial counts (log10 transformed values; LBMSCC= Bulk milk SCC; LTBC=Total bacterial count; LTSA = Total staphylococcus count; LTNAS= Total non-aureus Staphylococci count; and LTEC= Total Enterobacteriaceae count)
+
+summary(data$Log10BMSCC)
+summary(data$Log10TBC)
+summary(data$Log10TSA)
+summary(data$Log10TNAS)
+summary(data$Log10TEC)
+
+```
+
+
+
+## Converting factor variables: Dependent variables
+
+```{r converting categorical varibles into factor variables}
+
+# Presence/ absence of zoonotic pathogens in the samples, 1=yes; 0=No
+
+data$S..aureus=factor(data$S..aureus)
+data$C..Jejuni=factor(data$C..Jejuni)
+data$E..coli=factor(data$E..coli)
+data$E..coli.O157=factor(data$E..coli.O157)
+data$E..coli.O157.EAE=factor(data$E..coli.O157.EAE)
+data$E..coli.O157.STX1=factor(data$E..coli.O157.STX1)
+data$E..coli.O157.STX2=factor(data$E..coli.O157.STX2)
+data$Listeria.monocytogenes=factor(data$Listeria.monocytogenes)
+data$Salmonella.enterobacter=factor(data$Salmonella.enterobacter)
+data$Yersinia.enterocolitica=factor(data$Yersinia.enterocolitica)
+
+
+```
+
+
+## Frequency of categorical variables
+
+```{r performing frequency of categorical outcome variables}
+
+# Presence/ absence of zoonotic pathogens in the samples, 1=yes; 0=No
+
+tabulate(data$S..aureus)
+tabulate(data$C..Jejuni)
+tabulate(data$E..coli)
+tabulate(data$E..coli.O157)
+tabulate(data$E..coli.O157.EAE)
+tabulate(data$E..coli.O157.STX1)
+tabulate(data$E..coli.O157.STX2)
+tabulate(data$Listeria.monocytogenes)
+tabulate(data$Yersinia.enterocolitica)
+tabulate(data$Salmonella.enterobacter)
+
+
+```
+
+## Independent Variable descriptions
+
+```{r reading in data}
+
+table (data$Month)
+table (data$Season)
+table (data$Season1)
+table (data$District)
+table (data$T_rearing2)
+table (data$F_Zone4)
+table (data$C_container5)
+table (data$Fre_clean)
+table (data$Dry_Cont)
+table (data$H_dry_cont)
+table (data$Dry_upside)
+table (data$Open_BM)
+table (data$BM_sieve)
+table (data$Sc_milker1)
+table (data$P_CM)
+table (data$Mix_CM)
+table (data$Wash_buffalo)
+table (data$W_hand)
+
+```
+
+
+## Converting factor variables: Independent variables
+
+```{r converting categorical varibles into factor variables}
+
+data$Month=factor(data$Month)
+data$Season=factor(data$Season)
+data$Season1=factor(data$Season1)
+data$District=factor(data$District)
+data$T_rearing2=factor(data$T_rearing2)
+data$F_Zone4=factor(data$F_Zone4)
+data$C_container5=factor(data$C_container5)
+data$Fre_clean=factor(data$Fre_clean)
+data$Dry_Cont=factor(data$Dry_Cont)
+data$H_dry_cont=factor(data$H_dry_cont)
+data$Dry_upside=factor(data$Dry_upside)
+data$Open_BM=factor(data$Open_BM)
+data$BM_sieve=factor(data$BM_sieve)
+data$Sc_milker1=factor(data$Sc_milker1)
+data$P_CM=factor(data$P_CM)
+data$Mix_CM=factor(data$Mix_CM)
+data$Wash_buffalo=factor(data$Wash_buffalo)
+data$W_hand=factor(data$W_hand)
+
+
+```
+
+
+
+## Recoding variables
+
+```{r converting categorical varibles into factor variables}
+
+data$T_rearing <-recode(data$T_rearing2,"'Intensive'='0Intensive';'Free-ranging'='1Free-ranging'")
+data$BM_sieve1 <-recode(data$BM_sieve,"'No'='1No';'Yes'='0Yes'")
+
+```
+
+
+
+
+## Box plot (S. aureus) Bulk milk sample
+
+
+```{r creating box plot for }
+
+# Presence/ absence of S..aureus in the samples, 1=yes; 0=No
+
+tapply(data$Log10BMSCC, data$S..aureus, summary) 
+
+ggboxplot(data,"S..aureus","Log10BMSCC")+
+  stat_compare_means(label.x=1.5)
+
+
+# Presence/ absence of S..aureus in the samples, 1=yes; 0=No
+
+tapply(data$Log10TBC, data$S..aureus, summary) 
+
+ggboxplot(data,"S..aureus","Log10TBC")+
+  stat_compare_means(label.x=1.5)
+
+
+# Presence/ absence of S..aureus in the samples, 1=yes; 0=No
+
+tapply(data$Log10TSA, data$S..aureus, summary) 
+
+ggboxplot(data,"S..aureus","Log10TSA")+
+  stat_compare_means(label.x=1.5)
+
+
+# Presence/ absence of S..aureus in the samples, 1=yes; 0=No
+
+tapply(data$Log10TNAS, data$S..aureus, summary) 
+
+ggboxplot(data,"S..aureus","Log10TNAS")+
+  stat_compare_means(label.x=1.5)
+
+# Presence/ absence of S..aureus in the samples, 1=yes; 0=No
+
+tapply(data$Log10TEC, data$S..aureus, summary) 
+
+ggboxplot(data,"S..aureus","Log10TEC")+
+  stat_compare_means(label.x=1.5)
+
+
+```
+
+## Box plot (E..coli) Bulk milk sample
+
+```{r creating box plot for }
+
+# Presence/ absence of E..coli in the samples, 1=yes; 0=No
+
+tapply(data$Log10BMSCC, data$E..coli, summary) 
+
+ggboxplot(data,"E..coli","Log10BMSCC")+
+  stat_compare_means(label.x=1.5)
+
+
+# Presence/ absence of E..coli in the samples, 1=yes; 0=No
+
+tapply(data$Log10TBC, data$E..coli, summary) 
+
+ggboxplot(data,"E..coli","Log10TBC")+
+  stat_compare_means(label.x=1.5)
+
+
+# Presence/ absence of E..coli in the samples, 1=yes; 0=No
+
+tapply(data$Log10TSA, data$E..coli, summary) 
+
+ggboxplot(data,"E..coli","Log10TSA")+
+  stat_compare_means(label.x=1.5)
+
+
+# Presence/ absence of E..coli in the samples, 1=yes; 0=No
+
+tapply(data$Log10TNAS, data$E..coli, summary) 
+
+ggboxplot(data,"E..coli","Log10TNAS")+
+  stat_compare_means(label.x=1.5)
+
+
+
+# Presence/ absence of E..coli in the samples, 1=yes; 0=No
+
+tapply(data$Log10TEC, data$E..coli, summary) 
+
+ggboxplot(data,"E..coli","Log10TEC")+
+  stat_compare_means(label.x=1.5)
+
+
+```
+
+## Box plot (E..coli.O157) Bulk milk sample
+
+```{r creating box plot for }
+
+# Presence/ absence of E..coli.O157 in the samples, 1=yes; 0=No
+
+tapply(data$Log10BMSCC, data$E..coli.O157, summary) 
+
+ggboxplot(data,"E..coli.O157","Log10BMSCC")+
+  stat_compare_means(label.x=1.5)
+
+
+# Presence/ absence of E..coli.O157 in the samples, 1=yes; 0=No
+
+tapply(data$Log10TBC, data$E..coli.O157, summary) 
+
+ggboxplot(data,"E..coli.O157","Log10TBC")+
+  stat_compare_means(label.x=1.5)
+
+
+# Presence/ absence of E..coli.O157 in the samples, 1=yes; 0=No
+
+tapply(data$Log10TSA, data$E..coli.O157, summary) 
+
+ggboxplot(data,"E..coli.O157","Log10TSA")+
+  stat_compare_means(label.x=1.5)
+
+
+# Presence/ absence of E..coli.O157 in the samples, 1=yes; 0=No
+
+tapply(data$Log10TNAS, data$E..coli.O157, summary) 
+
+ggboxplot(data,"E..coli.O157","Log10TNAS")+
+  stat_compare_means(label.x=1.5)
+
+
+
+# Presence/ absence of E..coli.O157 in the samples, 1=yes; 0=No
+
+tapply(data$Log10TEC, data$E..coli.O157, summary) 
+
+ggboxplot(data,"E..coli.O157","Log10TEC")+
+  stat_compare_means(label.x=1.5)
+
+
+```
+
+## Box plot (Listeria.monocytogenes) Bulk milk sample
+
+```{r creating box plot for }
+
+# Presence/ absence of Listeria.monocytogenes in the samples, 1=yes; 0=No
+
+tapply(data$Log10BMSCC, data$Listeria.monocytogenes, summary) 
+
+ggboxplot(data,"Listeria.monocytogenes","Log10BMSCC")+
+  stat_compare_means(label.x=1.5)
+
+
+# Presence/ absence of Listeria.monocytogenes in the samples, 1=yes; 0=No
+
+tapply(data$Log10TBC, data$Listeria.monocytogenes, summary) 
+
+ggboxplot(data,"Listeria.monocytogenes","Log10TBC")+
+  stat_compare_means(label.x=1.5)
+
+
+# Presence/ absence of Listeria.monocytogenes in the samples, 1=yes; 0=No
+
+tapply(data$Log10TSA, data$Listeria.monocytogenes, summary) 
+
+ggboxplot(data,"Listeria.monocytogenes","Log10TSA")+
+  stat_compare_means(label.x=1.5)
+
+
+# Presence/ absence of Listeria.monocytogenes in the samples, 1=yes; 0=No
+
+tapply(data$Log10TNAS, data$Listeria.monocytogenes, summary) 
+
+ggboxplot(data,"Listeria.monocytogenes","Log10TNAS")+
+  stat_compare_means(label.x=1.5)
+
+
+
+# Presence/ absence of Listeria.monocytogenes in the samples, 1=yes; 0=No
+
+tapply(data$Log10TEC, data$Listeria.monocytogenes, summary) 
+
+ggboxplot(data,"Listeria.monocytogenes","Log10TEC")+
+  stat_compare_means(label.x=1.5)
+
+
+```
+
+## Box plot (Yersinia.enterocolitica) Bulk milk sample
+
+```{r creating box plot for }
+
+# Presence/ absence of Yersinia.enterocolitica in the samples, 1=yes; 0=No
+
+tapply(data$Log10BMSCC, data$Yersinia.enterocolitica, summary) 
+
+ggboxplot(data,"Yersinia.enterocolitica","Log10BMSCC")+
+  stat_compare_means(label.x=1.5)
+
+
+# Presence/ absence of Yersinia.enterocolitica in the samples, 1=yes; 0=No
+
+tapply(data$Log10TBC, data$Yersinia.enterocolitica, summary) 
+
+ggboxplot(data,"Yersinia.enterocolitica","Log10TBC")+
+  stat_compare_means(label.x=1.5)
+
+
+# Presence/ absence of Yersinia.enterocolitica in the samples, 1=yes; 0=No
+
+tapply(data$Log10TSA, data$Yersinia.enterocolitica, summary) 
+
+ggboxplot(data,"Yersinia.enterocolitica","Log10TSA")+
+  stat_compare_means(label.x=1.5)
+
+
+# Presence/ absence of Yersinia.enterocolitica in the samples, 1=yes; 0=No
+
+tapply(data$Log10TNAS, data$Yersinia.enterocolitica, summary) 
+
+ggboxplot(data,"Yersinia.enterocolitica","Log10TNAS")+
+  stat_compare_means(label.x=1.5)
+
+
+
+# Presence/ absence of Yersinia.enterocolitica in the samples, 1=yes; 0=No
+
+tapply(data$Log10TEC, data$Yersinia.enterocolitica, summary) 
+
+ggboxplot(data,"Yersinia.enterocolitica","Log10TEC")+
+  stat_compare_means(label.x=1.5)
+
+
+```
+
+
+
+
+## Independent variables into factor variables 
+
+```{r converting categorical varibles into factor variables}
+
+data$Month=factor(data$Month)
+data$Season=factor(data$Season)
+data$Season1=factor(data$Season1)
+data$District=factor(data$District)
+data$T_rearing2=factor(data$T_rearing2)
+data$F_Zone4=factor(data$F_Zone4)
+data$C_container5=factor(data$C_container5)
+data$Fre_clean=factor(data$Fre_clean)
+data$Dry_Cont=factor(data$Dry_Cont)
+data$H_dry_cont=factor(data$H_dry_cont)
+data$Dry_upside=factor(data$Dry_upside)
+data$Open_BM=factor(data$Open_BM)
+data$BM_sieve=factor(data$BM_sieve)
+data$Sc_milker1=factor(data$Sc_milker1)
+data$P_CM=factor(data$P_CM)
+data$Mix_CM=factor(data$Mix_CM)
+data$Wash_buffalo=factor(data$Wash_buffalo)
+data$W_hand=factor(data$W_hand)
+
+```
+
+
+table(data$Month)
+table(data$Season)
+table(data$District)
+table(data$T_rearing)
+table(data$Fre_clean)
+table(data$Dry_Cont)
+table(data$H_dry_cont)
+table(data$Dry_upside)
+table(data$Open_BM)
+table(data$BM_sieve)
+table(data$Sc_milker1)
+table(data$P_CM)
+table(data$Mix_CM)
+table(data$W_hand)
+
+
+
+## Independent variables String missing variables to NA 
+
+```{r converting misisng string varibles into NA factor variables}
+
+data$Month[data$Month == ""] <- NA
+data$T_rearing2[data$T_rearing2 == ""] <- NA
+data$Season[data$Season == ""] <- NA
+data$Season1[data$Season1 == ""] <- NA
+data$District[data$District == ""] <- NA
+data$F_Zone4[data$F_Zone4 == ""] <- NA
+data$Fre_clean[data$Fre_clean == ""] <- NA
+data$C_container5[data$C_container5 == ""] <- NA
+data$Dry_upside[data$Dry_upside == ""] <- NA
+data$Open_BM[data$Open_BM == ""] <- NA
+data$BM_sieve[data$BM_sieve == ""] <- NA
+data$Sc_milker1[data$Sc_milker1 == ""] <- NA
+data$P_CM[data$P_CM == ""] <- NA
+data$Mix_CM[data$Mix_CM == ""] <- NA
+data$Wash_buffalo[data$Wash_buffalo == ""] <- NA
+data$W_hand[data$W_hand == ""] <- NA
+
+
+```
+
+
+
+
+## Chi-square test for S. aureus
+
+```{r performing ch-squared test between the variables and presence/absence of S. aureus}
+
+table(data$S..aureus, data$Month)
+table(data$S..aureus, data$Season)
+table(data$S..aureus, data$Season1)
+table(data$S..aureus, data$District)
+table(data$S..aureus, data$T_rearing2)
+table(data$S..aureus, data$F_Zone4)
+table(data$S..aureus, data$C_container5)
+table(data$S..aureus, data$Fre_clean)
+table(data$S..aureus, data$Dry_Cont)
+table(data$S..aureus, data$H_dry_cont)
+table(data$S..aureus, data$Dry_upside)
+table(data$S..aureus, data$Open_BM)
+table(data$S..aureus, data$BM_sieve)
+table(data$S..aureus, data$Sc_milker1)
+table(data$S..aureus, data$P_CM)
+table(data$S..aureus, data$Mix_CM)
+table(data$S..aureus, data$Wash_buffalo)
+
+```
+
+
+table(data$S..aureus,data$H_dry_cont)
+fisher.test(data$S..aureus,data$H_dry_cont)
+
+table(data$S..aureus,data$T_rearing2)
+fisher.test(data$S..aureus,data$T_rearing2)
+
+
+
+
+## Chi-square test for S. aureus
+
+```{r performing ch-squared test between the variables and presence/absence of S. aureus}
+
+fisher.test(data$S..aureus, data$Month)
+fisher.test(data$S..aureus, data$Season)
+fisher.test(data$S..aureus, data$Season1)
+fisher.test(data$S..aureus, data$District)
+fisher.test(data$S..aureus, data$T_rearing2)
+fisher.test(data$S..aureus, data$F_Zone4)
+fisher.test(data$S..aureus, data$C_container5)
+fisher.test(data$S..aureus, data$Fre_clean)
+fisher.test(data$S..aureus, data$Dry_Cont)
+fisher.test(data$S..aureus, data$H_dry_cont)
+fisher.test(data$S..aureus, data$Dry_upside)
+fisher.test(data$S..aureus, data$Open_BM)
+fisher.test(data$S..aureus, data$BM_sieve)
+fisher.test(data$S..aureus, data$Sc_milker1)
+fisher.test(data$S..aureus, data$P_CM)
+fisher.test(data$S..aureus, data$Mix_CM)
+fisher.test(data$S..aureus, data$Wash_buffalo)
+fisher.test(data$S..aureus, data$W_hand)
+
+```
+
+## Chi-square test for E..coli
+
+```{r performing ch-squared test between the variables and presence/absence of E..coli}
+
+fisher.test(data$E..coli, data$Month)
+fisher.test(data$E..coli, data$Season)
+fisher.test(data$E..coli, data$Season1)
+fisher.test(data$E..coli, data$District)
+fisher.test(data$E..coli, data$T_rearing2)
+fisher.test(data$E..coli, data$F_Zone4)
+fisher.test(data$E..coli, data$C_container5)
+fisher.test(data$E..coli, data$Fre_clean)
+fisher.test(data$E..coli, data$Dry_Cont)
+fisher.test(data$E..coli, data$H_dry_cont)
+fisher.test(data$E..coli, data$Dry_upside)
+fisher.test(data$E..coli, data$Open_BM)
+fisher.test(data$E..coli, data$BM_sieve)
+fisher.test(data$E..coli, data$Sc_milker1)
+fisher.test(data$E..coli, data$P_CM)
+fisher.test(data$E..coli, data$Mix_CM)
+fisher.test(data$E..coli, data$Wash_buffalo)
+fisher.test(data$E..coli, data$W_hand)
+
+```
+
+
+
+
+table(data$E..coli,data$Season)
+fisher.test(data$E..coli,data$Season)
+
+table(data$E..coli,data$P_CM)
+fisher.test(data$E..coli,data$P_CM)
+
+table(data$E..coli,data$Mix_CM)
+fisher.test(data$E..coli,data$Mix_CM)
+
+
+
+
+
+
+## Chi-square test for E..coli.O157
+
+```{r performing ch-squared test between the variables and presence/absence of E..coli.O157}
+
+fisher.test(data$E..coli.O157, data$Month)
+fisher.test(data$E..coli.O157, data$Season)
+fisher.test(data$E..coli.O157, data$Season1)
+fisher.test(data$E..coli.O157, data$District)
+fisher.test(data$E..coli.O157, data$T_rearing2)
+fisher.test(data$E..coli.O157, data$F_Zone4)
+fisher.test(data$E..coli.O157, data$C_container5)
+fisher.test(data$E..coli.O157, data$Fre_clean)
+fisher.test(data$E..coli.O157, data$Dry_Cont)
+fisher.test(data$E..coli.O157, data$H_dry_cont)
+fisher.test(data$E..coli.O157, data$Dry_upside)
+fisher.test(data$E..coli.O157, data$Open_BM)
+fisher.test(data$E..coli.O157, data$BM_sieve)
+fisher.test(data$E..coli.O157, data$Sc_milker1)
+fisher.test(data$E..coli.O157, data$P_CM)
+fisher.test(data$E..coli.O157, data$Mix_CM)
+fisher.test(data$E..coli.O157, data$Wash_buffalo)
+fisher.test(data$E..coli.O157, data$W_hand)
+
+
+```
+
+
+
+table(data$E..coli.O157,data$District)
+fisher.test(data$E..coli.O157,data$District)
+
+table(data$E..coli.O157,data$Open_BM)
+fisher.test(data$E..coli.O157,data$Open_BM)
+
+table(data$E..coli.O157,data$T_rearing2)
+fisher.test(data$E..coli.O157,data$T_rearing2)
+
+table(data$E..coli.O157,data$Season)
+fisher.test(data$E..coli.O157,data$Season)
+
+table(data$E..coli.O157,data$Dry_Cont)
+fisher.test(data$E..coli.O157,data$Dry_Cont)
+
+table(data$E..coli.O157,data$BM_sieve)
+fisher.test(data$E..coli.O157,data$BM_sieve)
+
+
+
+
+## Chi-square test for E..coli.O157 EAE
+
+```{r performing ch-squared test between the variables and presence/absence of E..coli.O157}
+
+fisher.test(data$E..coli.O157.EAE, data$Month)
+fisher.test(data$E..coli.O157.EAE, data$Season)
+fisher.test(data$E..coli.O157.EAE, data$Season1)
+fisher.test(data$E..coli.O157.EAE, data$District)
+fisher.test(data$E..coli.O157.EAE, data$T_rearing2)
+fisher.test(data$E..coli.O157.EAE, data$F_Zone4)
+fisher.test(data$E..coli.O157.EAE, data$C_container5)
+fisher.test(data$E..coli.O157.EAE, data$Fre_clean)
+fisher.test(data$E..coli.O157.EAE, data$Dry_Cont)
+fisher.test(data$E..coli.O157.EAE, data$H_dry_cont)
+fisher.test(data$E..coli.O157.EAE, data$Dry_upside)
+fisher.test(data$E..coli.O157.EAE, data$Open_BM)
+fisher.test(data$E..coli.O157.EAE, data$BM_sieve)
+fisher.test(data$E..coli.O157.EAE, data$Sc_milker1)
+fisher.test(data$E..coli.O157.EAE, data$P_CM)
+fisher.test(data$E..coli.O157.EAE, data$Mix_CM)
+fisher.test(data$E..coli.O157.EAE, data$Wash_buffalo)
+fisher.test(data$E..coli.O157.EAE, data$W_hand)
+
+
+```
+
+
+table(data$E..coli.O157,data$District)
+fisher.test(data$E..coli.O157,data$District)
+
+table(data$E..coli.O157.EAE,data$Sc_milker1)
+fisher.test(data$E..coli.O157.EAE,data$Sc_milker1)
+
+
+## Chi-square test for E..coli.O157 STX1
+
+```{r performing ch-squared test between the variables and presence/absence of E..coli.O157}
+
+fisher.test(data$E..coli.O157.STX1, data$Month)
+fisher.test(data$E..coli.O157.STX1, data$Season)
+fisher.test(data$E..coli.O157.STX1, data$Season1)
+fisher.test(data$E..coli.O157.STX1, data$District)
+fisher.test(data$E..coli.O157.STX1, data$T_rearing2)
+fisher.test(data$E..coli.O157.STX1, data$F_Zone4)
+fisher.test(data$E..coli.O157.STX1, data$C_container5)
+fisher.test(data$E..coli.O157.STX1, data$Fre_clean)
+fisher.test(data$E..coli.O157.STX1, data$Dry_Cont)
+fisher.test(data$E..coli.O157.STX1, data$H_dry_cont)
+fisher.test(data$E..coli.O157.STX1, data$Dry_upside)
+fisher.test(data$E..coli.O157.STX1, data$Open_BM)
+fisher.test(data$E..coli.O157.STX1, data$BM_sieve)
+fisher.test(data$E..coli.O157.STX1, data$Sc_milker1)
+fisher.test(data$E..coli.O157.STX1, data$P_CM)
+fisher.test(data$E..coli.O157.STX1, data$Mix_CM)
+fisher.test(data$E..coli.O157.STX1, data$Wash_buffalo)
+fisher.test(data$E..coli.O157.STX1, data$W_hand)
+
+
+```
+
+
+
+
+table(data$E..coli.O157.STX1,data$District)
+fisher.test(data$E..coli.O157.STX1,data$District)
+
+table(data$E..coli.O157.STX1,data$Sc_milker1)
+fisher.test(data$E..coli.O157.STX1,data$Sc_milker1)
+
+
+## Chi-square test for E..coli.O157 STX2
+
+```{r performing ch-squared test between the variables and presence/absence of E..coli.O157.STX2}
+
+fisher.test(data$E..coli.O157.STX2, data$Month)
+fisher.test(data$E..coli.O157.STX2, data$Season)
+fisher.test(data$E..coli.O157.STX2, data$Season1)
+fisher.test(data$E..coli.O157.STX2, data$District)
+fisher.test(data$E..coli.O157.STX2, data$T_rearing2)
+fisher.test(data$E..coli.O157.STX2, data$F_Zone4)
+fisher.test(data$E..coli.O157.STX2, data$C_container5)
+fisher.test(data$E..coli.O157.STX2, data$Fre_clean)
+fisher.test(data$E..coli.O157.STX2, data$Dry_Cont)
+fisher.test(data$E..coli.O157.STX2, data$H_dry_cont)
+fisher.test(data$E..coli.O157.STX2, data$Dry_upside)
+fisher.test(data$E..coli.O157.STX2, data$Open_BM)
+fisher.test(data$E..coli.O157.STX2, data$BM_sieve)
+fisher.test(data$E..coli.O157.STX2, data$Sc_milker1)
+fisher.test(data$E..coli.O157.STX2, data$P_CM)
+fisher.test(data$E..coli.O157.STX2, data$Mix_CM)
+fisher.test(data$E..coli.O157.STX2, data$Wash_buffalo)
+fisher.test(data$E..coli.O157.STX2, data$W_hand)
+
+
+```
+
+
+table(data$E..coli.O157.STX2,data$District)
+fisher.test(data$E..coli.O157.STX2,data$District)
+
+table(data$E..coli.O157.STX2,data$Season)
+fisher.test(data$E..coli.O157.STX2,data$Season)
+
+table(data$E..coli.O157.STX2,data$Fre_clean)
+fisher.test(data$E..coli.O157.STX2,data$Fre_clean)
+
+table(data$E..coli.O157.STX2,data$Open_BM)
+fisher.test(data$E..coli.O157.STX2,data$Open_BM)
+
+table(data$E..coli.O157.STX2,data$T_rearing2)
+fisher.test(data$E..coli.O157.STX2,data$T_rearing2)
+
+
+
+
+
+## Chi-square test for Listeria.monocytogenes
+
+```{r performing ch-squared test between the variables and presence/absence of Listeria.monocytogenes}
+
+fisher.test(data$Listeria.monocytogenes, data$Month)
+fisher.test(data$Listeria.monocytogenes, data$Season)
+fisher.test(data$Listeria.monocytogenes, data$Season1)
+fisher.test(data$Listeria.monocytogenes, data$District)
+fisher.test(data$Listeria.monocytogenes, data$T_rearing2)
+fisher.test(data$Listeria.monocytogenes, data$F_Zone4)
+fisher.test(data$Listeria.monocytogenes, data$C_container5)
+fisher.test(data$Listeria.monocytogenes, data$Fre_clean)
+fisher.test(data$Listeria.monocytogenes, data$Dry_Cont)
+fisher.test(data$Listeria.monocytogenes, data$H_dry_cont)
+fisher.test(data$Listeria.monocytogenes, data$Dry_upside)
+fisher.test(data$Listeria.monocytogenes, data$Open_BM)
+fisher.test(data$Listeria.monocytogenes, data$BM_sieve)
+fisher.test(data$Listeria.monocytogenes, data$Sc_milker1)
+fisher.test(data$Listeria.monocytogenes, data$P_CM)
+fisher.test(data$Listeria.monocytogenes, data$Mix_CM)
+fisher.test(data$Listeria.monocytogenes, data$Wash_buffalo)
+fisher.test(data$Listeria.monocytogenes, data$W_hand)
+
+
+```
+
+
+
+
+table(data$Listeria.monocytogenes,data$District)
+fisher.test(data$Listeria.monocytogenes,data$District)
+
+table(data$Listeria.monocytogenes,data$Season)
+fisher.test(data$Listeria.monocytogenes,data$Season)
+
+table(data$Listeria.monocytogenes,data$BM_sieve)
+fisher.test(data$Listeria.monocytogenes,data$BM_sieve)
+
+table(data$Listeria.monocytogenes,data$Mix_CM)
+fisher.test(data$Listeria.monocytogenes,data$Mix_CM)
+
+table(data$Listeria.monocytogenes,data$Sc_milker1)
+fisher.test(data$Listeria.monocytogenes,data$Sc_milker1)
+
+
+
+## Chi-square test for Salmonella.enterobacter
+
+```{r performing ch-squared test between the variables and presence/absence of Salmonella.enterobacter}
+
+fisher.test(data$Salmonella.enterobacter, data$Month)
+fisher.test(data$Salmonella.enterobacter, data$Season)
+fisher.test(data$Salmonella.enterobacter, data$Season1)
+fisher.test(data$Salmonella.enterobacter, data$District)
+fisher.test(data$Salmonella.enterobacter, data$T_rearing2)
+fisher.test(data$Salmonella.enterobacter, data$F_Zone4)
+fisher.test(data$Salmonella.enterobacter, data$C_container5)
+fisher.test(data$Salmonella.enterobacter, data$Fre_clean)
+fisher.test(data$Salmonella.enterobacter, data$Dry_Cont)
+fisher.test(data$Salmonella.enterobacter, data$H_dry_cont)
+fisher.test(data$Salmonella.enterobacter, data$Dry_upside)
+fisher.test(data$Salmonella.enterobacter, data$Open_BM)
+fisher.test(data$Salmonella.enterobacter, data$BM_sieve)
+fisher.test(data$Salmonella.enterobacter, data$Sc_milker1)
+fisher.test(data$Salmonella.enterobacter, data$P_CM)
+fisher.test(data$Salmonella.enterobacter, data$Mix_CM)
+fisher.test(data$Salmonella.enterobacter, data$Wash_buffalo)
+fisher.test(data$Salmonella.enterobacter, data$W_hand)
+
+
+```
+
+
+
+## Chi-square test for Yersinia.enterocolitica
+
+```{r performing ch-squared test between the variables and presence/absence of Yersinia.enterocolitica}
+
+fisher.test(data$Yersinia.enterocolitica, data$Month)
+fisher.test(data$Yersinia.enterocolitica, data$Season)
+fisher.test(data$Yersinia.enterocolitica, data$Season1)
+fisher.test(data$Yersinia.enterocolitica, data$District)
+fisher.test(data$Yersinia.enterocolitica, data$T_rearing2)
+fisher.test(data$Yersinia.enterocolitica, data$F_Zone4)
+fisher.test(data$Yersinia.enterocolitica, data$C_container5)
+fisher.test(data$Yersinia.enterocolitica, data$Fre_clean)
+fisher.test(data$Yersinia.enterocolitica, data$Dry_Cont)
+fisher.test(data$Yersinia.enterocolitica, data$H_dry_cont)
+fisher.test(data$Yersinia.enterocolitica, data$Dry_upside)
+fisher.test(data$Yersinia.enterocolitica, data$Open_BM)
+fisher.test(data$Yersinia.enterocolitica, data$BM_sieve)
+fisher.test(data$Yersinia.enterocolitica, data$Sc_milker1)
+fisher.test(data$Yersinia.enterocolitica, data$P_CM)
+fisher.test(data$Yersinia.enterocolitica, data$Mix_CM)
+fisher.test(data$Yersinia.enterocolitica, data$Wash_buffalo)
+fisher.test(data$Yersinia.enterocolitica, data$W_hand)
+
+
+```
+
+
+
+
+table(data$Yersinia.enterocolitica,data$District)
+fisher.test(data$Yersinia.enterocolitica,data$District)
+
+table(data$Yersinia.enterocolitica,data$Season)
+fisher.test(data$Yersinia.enterocolitica,data$Season)
+
+table(data$Yersinia.enterocolitica,data$Mix_CM)
+fisher.test(data$Yersinia.enterocolitica,data$Mix_CM)
+
+table(data$Yersinia.enterocolitica,data$Sc_milker1)
+fisher.test(data$Yersinia.enterocolitica,data$Sc_milker1)
+
+table(data$Yersinia.enterocolitica,data$Dry_upside)
+fisher.test(data$Yersinia.enterocolitica,data$Dry_upside)
+
+
+### Univariable analysis of E. coli
+
+
+
+
+## Univariable analysis for E..coli
+
+## E. coli (Season)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~Season1, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E. coli (District)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~District, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E. coli (Rearing system)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~T_rearing2, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E. coli (Farm zone)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~F_Zone4, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E. coli (Cleanliness of the container)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~C_container5, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E. coli (Frequency of cleaning)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~Fre_clean, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E. coli (Drying the container)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~Dry_Cont, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E. coli (How they dry the container)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~H_dry_cont, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E. coli (Dry by keeping upside down)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~Dry_upside, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E. coli (Keep the BM container open)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~Open_BM, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## E. coli (Sieving the milk)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~BM_sieve, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## E. coli (Milker hygiene)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~Sc_milker1, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## E. coli (Previous history of CM)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~P_CM, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## E. coli (Mixing CM milk)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~Mix_CM, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## E. coli (Wash buffalo)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~Wash_buffalo, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## E. coli (Wash hand)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~W_hand, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+### Univariable analysis of E..coli.O157
+
+## E..coli.O157 (Season)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~Season1, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E..coli.O157 (District)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~District, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E..coli.O157 (Rearing system)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~T_rearing2, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E..coli.O157 (Farm zone)
+
+
+## Univariable analysis for E..coli.O157
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~F_Zone4, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E..coli.O157 (Cleanliness of the container)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~C_container5, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E..coli.O157 (Frequency of cleaning)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~Fre_clean, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E..coli.O157 (Drying the container)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~Dry_Cont, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E..coli.O157 (How they dry the container)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~H_dry_cont, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E..coli.O157 (Dry by keeping upside down)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~Dry_upside, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E..coli.O157 (Keep the BM container open)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~Open_BM, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## E..coli.O157 (Sieving the milk)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~BM_sieve, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## E..coli.O157 (Milker hygiene)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~Sc_milker1, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## E..coli.O157 (Previous history of CM)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~P_CM, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## E..coli.O157 (Mixing CM milk)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~Mix_CM, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## E..coli.O157 (Wash buffalo)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~Wash_buffalo, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## E..coli.O157 (Wash hand)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~W_hand, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+### Univariable analysis of Listeria.monocytogenes
+
+
+## Listeria.monocytogenes (Season)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Listeria.monocytogenes~Season1, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Listeria.monocytogenes (District)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Listeria.monocytogenes~District, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Listeria.monocytogenes (Rearing system)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Listeria.monocytogenes~T_rearing2, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Listeria.monocytogenes (Farm zone)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Listeria.monocytogenes~F_Zone4, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Listeria.monocytogenes (Cleanliness of the container)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Listeria.monocytogenes~C_container5, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Listeria.monocytogenes (Frequency of cleaning)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Listeria.monocytogenes~Fre_clean, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Listeria.monocytogenes (Drying the container)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Listeria.monocytogenes~Dry_Cont, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Listeria.monocytogenes (How they dry the container)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Listeria.monocytogenes~H_dry_cont, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Listeria.monocytogenes (Dry by keeping upside down)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Listeria.monocytogenes~Dry_upside, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Listeria.monocytogenes (Keep the BM container open)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Listeria.monocytogenes~Open_BM, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## Listeria.monocytogenes (Sieving the milk)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Listeria.monocytogenes~BM_sieve, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## Listeria.monocytogenes (Milker hygiene)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Listeria.monocytogenes~Sc_milker1, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## Listeria.monocytogenes (Previous history of CM)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Listeria.monocytogenes~P_CM, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## Listeria.monocytogenes (Mixing CM milk)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Listeria.monocytogenes~Mix_CM, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## Listeria.monocytogenes (Wash buffalo)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Listeria.monocytogenes~Wash_buffalo, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## Listeria.monocytogenes (Wash hand)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Listeria.monocytogenes~W_hand, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+
+### Univariable analysis of Yersinia.enterocolitica
+
+
+## Yersinia.enterocolitica (Season)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~Season1, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Yersinia.enterocolitica (District)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~District, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Yersinia.enterocolitica (Rearing system)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~T_rearing2, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Yersinia.enterocolitica (Farm zone)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~F_Zone4, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Yersinia.enterocolitica (Cleanliness of the container)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~C_container5, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Yersinia.enterocolitica (Frequency of cleaning)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~Fre_clean, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Yersinia.enterocolitica (Drying the container)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~Dry_Cont, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Yersinia.enterocolitica (How they dry the container)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~H_dry_cont, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Yersinia.enterocolitica (Dry by keeping upside down)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~Dry_upside, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Yersinia.enterocolitica (Keep the BM container open)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~Open_BM, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## Yersinia.enterocolitica (Sieving the milk)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~BM_sieve, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## Yersinia.enterocolitica (Milker hygiene)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~Sc_milker1, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## Yersinia.enterocolitica (Previous history of CM)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~P_CM, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## Yersinia.enterocolitica (Mixing CM milk)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~Mix_CM, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## Yersinia.enterocolitica (Wash buffalo)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~Wash_buffalo, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## Yersinia.enterocolitica (Wash hand)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~W_hand, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+
+## Multivariable analysis of E. coli
+
+
+
+## E..coli (Previous history of Clinical mastitis )
+
+```{r calculating multivariable logistic regression}
+
+# mult.glmer<-glm(E..coli~P_CM, family = binomial(), data=data)
+
+# mult.glmer<-glm(E..coli~P_CM+Mix_CM, family = binomial(), data=data)
+
+# mult.glmer<-glm(E..coli~P_CM+C_container5, family = binomial(), data=data)
+
+ mult.glmer<-glm(E..coli~P_CM, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+confint(mult.glmer)
+
+ drop1(mult.glmer, test = "Chisq")
+
+# performance::icc(mult.glmer)
+
+```
+
+
+
+
+
+
+
+
+
+
+## Multivariable analysis of E..coli.O157
+
+## E..coli.O157 (Rearing system + Sieving of bulk milk)
+
+```{r calculating multivariable logistic regression}
+
+ data%>%
+  select(dataT_rearing2,Dry_Cont,BM_sieve) %>%
+  filter(!complete.cases(.)) %>%
+  
+  
+  View(data1)
+
+# mult.glmer<-glm(E..coli.O157~Open_BM+T_rearing2, family = binomial(), data=data)
+
+# mult.glmer<-glm(E..coli.O157~Open_BM+T_rearing2+Dry_Cont, family = binomial(), data=data)
+
+# mult.glmer<-glm(E..coli.O157~Open_BM+T_rearing2+BM_sieve, family = binomial(), data=data)
+
+# mult.glmer<-glm(E..coli.O157~T_rearing2, family = binomial(), data=data)
+
+# mult.glmer<-glm(E..coli.O157~T_rearing2+Dry_Cont, family = binomial(), data=data)
+
+ mult.glmer<-glm(E..coli.O157~T_rearing+BM_sieve1, family = binomial(), data=data)
+
+# mult.glmer<-glm(E..coli.O157~T_rearing2+Dry_Cont+BM_sieve+Season1, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+confint(mult.glmer)
+
+ drop1(mult.glmer, test = "Chisq")
+
+# performance::icc(mult.glmer)
+
+```
+
+
+
+
+
+
+
+
+## Multivariable analysis of Listeria.monocytogenes
+
+## Listeria.monocytogenes (Sieving the milk + Mixing CM milk)
+
+```{r calculating multivariable logistic regression}
+
+# data$T_rearing <-recode(data$T_rearing2,"'Intensive'='0Intensive';'Free-ranging'='1Free-ranging'")
+# data$BM_sieve1 <-recode(data$BM_sieve,"'No'='1No';'Yes'='0Yes'")
+
+# mult.glmer<-glm(Listeria.monocytogenes~BM_sieve, family = binomial(), data=data)
+
+# mult.glmer<-glm(Listeria.monocytogenes~BM_sieve+Season, family = binomial(), data=data)
+
+# mult.glmer<-glm(Listeria.monocytogenes~BM_sieve+Sc_milker1, family = binomial(), data=data)
+
+# mult.glmer<-glm(Listeria.monocytogenes~BM_sieve+W_hand, family = binomial(), data=data)
+
+# mult.glmer<-glm(Listeria.monocytogenes~BM_sieve+F_Zone4, family = binomial(), data=data)
+
+# mult.glmer<-glm(Listeria.monocytogenes~BM_sieve+Dry_Cont, family = binomial(), data=data)
+
+# mult.glmer<-glm(Listeria.monocytogenes~BM_sieve+Mix_CM, family = binomial(), data=data)
+
+ #data%>%
+  #select(Mix_CM,BM_sieve) %>%
+  #filter(!complete.cases(.)) %>%
+
+
+mult.glmer<-glm(Listeria.monocytogenes~BM_sieve1+Mix_CM, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+ confint(mult.glmer)
+
+ drop1(mult.glmer, test = "Chisq")
+
+# performance::icc(mult.glmer)
+
+```
+
+ data%>%
+  select(Mix_CM,BM_sieve) %>%
+  filter(!complete.cases(.)) %>%
+
+
+
+
+
+
+
+
+
+
+
+## Multivariable analysis of Yersinia.enterocolitica
+
+## Yersinia.enterocolitica (Rearing system + Sieving of bulk milk)
+
+```{r calculating multivariable logistic regression}
+
+
+ mult.glmer<-glm(Yersinia.enterocolitica~Sc_milker1, family = binomial(), data=data)
+
+# mult.glmer<-glm(Yersinia.enterocolitica~Sc_milker1+F_Zone4, family = binomial(), data=data)
+
+# mult.glmer<-glm(Yersinia.enterocolitica~Sc_milker1+Mix_CM, family = binomial(), data=data)
+
+# mult.glmer<-glm(Yersinia.enterocolitica~Sc_milker1+Fre_clean, family = binomial(), data=data)
+
+# mult.glmer<-glm(Yersinia.enterocolitica~Sc_milker1+Dry_upside, family = binomial(), data=data)
+
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+  confint(mult.glmer)
+
+  drop1(mult.glmer, test = "Chisq")
+
+# performance::icc(mult.glmer)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

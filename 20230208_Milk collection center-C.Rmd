@@ -1,0 +1,744 @@
+---
+title: "Milk chain Zoonotic pathogens"
+author: "Shuvo Singha"
+date: "2022-12-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+## Installing R packages
+
+```{r installing package}
+
+#install.packages ("ggpubr")
+
+
+```
+
+## Loading the library
+
+```{r loading package}
+
+library(lme4) # glmer
+library(car)  # Anova
+library(multcomp)
+library(multcompView)
+library(pROC)
+library(emmeans)
+library(lmerTest)
+library(ggplot2)
+library(gmodels)
+library(ggpubr)
+library(sjstats)
+library(AUC)
+library(plyr)
+library(ggpubr)
+
+```
+
+## Selecting working directory
+
+```{r reading in data}
+
+setwd("D:/Current/Mizan Sir/Buffalo project/Protocol/4. Zoonotic pathogen and microbiome study UNIMI/Data analysis/R")
+
+```
+
+## Importing dataset
+
+```{r reading in data}
+
+# data=read.csv("C.csv", header=T, sep=",")
+
+data=read.csv("C_uncoded.csv", header=T, sep=",")
+
+#Cross checking data structure
+#use the str command to produce a summary of the dataset:
+str(data)
+
+```
+
+## Outcome Variable descriptions
+
+```{r performing summary statistics of continuous outcome variables}
+
+# BMSCC and Bacterial counts (log10 transformed values; LBMSCC= Bulk milk SCC; LTBC=Total bacterial count; LTSA = Total staphylococcus count; LTNAS= Total non-aureus Staphylococci count; and LTEC= Total Enterobacteriaceae count)
+
+summary(data$Log10BMSCC)
+summary(data$Log10TBC)
+summary(data$Log10TSA)
+summary(data$Log10TNAS)
+summary(data$Log10TEC)
+
+```
+
+
+## Converting outcomes into factor variables 
+
+```{r converting categorical varibles into factor variables}
+
+# Presence/ absence of zoonotic pathogens in the samples, 1=yes; 0=No
+
+data$S..aureus=factor(data$S..aureus)
+data$C..Jejuni=factor(data$C..Jejuni)
+data$E..coli=factor(data$E..coli)
+data$E..coli.O157=factor(data$E..coli.O157)
+data$E..coli.O157.EAE=factor(data$E..coli.O157.EAE)
+data$E..coli.O157.STX1=factor(data$E..coli.O157.STX1)
+data$E..coli.O157.STX2=factor(data$E..coli.O157.STX2)
+data$Listeria.monocytogenes=factor(data$Listeria.monocytogenes)
+data$Salmonella.enterobacter=factor(data$Salmonella.enterobacter)
+data$Yersinia.enterocolitica=factor(data$Yersinia.enterocolitica)
+
+
+```
+
+## Frequency of outcome variables
+```{r performing frequency of categorical outcome variables}
+
+# Presence/ absence of zoonotic pathogens in the samples, 1=yes; 0=No
+
+tabulate(data$S..aureus)
+tabulate(data$C..Jejuni)
+tabulate(data$E..coli)
+tabulate(data$E..coli.O157)
+tabulate(data$E..coli.O157.EAE)
+tabulate(data$E..coli.O157.STX1)
+tabulate(data$E..coli.O157.STX2)
+tabulate(data$Listeria.monocytogenes)
+tabulate(data$Yersinia.enterocolitica)
+tabulate(data$Salmonella.enterobacter)
+
+
+```
+
+## Independent Variable descriptions
+
+```{r reading in data}
+
+table (data$Type_Trader1)
+table (data$Nature_milk)
+table (data$Type_container1)
+
+
+
+
+```
+
+
+## Converting independent variables into factor variables 
+
+```{r converting categorical varibles into factor variables}
+
+
+data$Type_Trader1=factor(data$Type_Trader1)
+data$Nature_milk=factor(data$Nature_milk)
+data$Type_container1=factor(data$Type_container1)
+
+
+```
+
+
+
+## Independent variables String missing variables to NA 
+
+```{r converting misisng string varibles into NA factor variables}
+
+data$Type_Trader1[data$Type_Trader1 == ""] <- NA
+data$Nature_milk[data$Nature_milk == ""] <- NA
+data$Type_container1[data$Type_container1 == ""] <- NA
+
+```
+
+
+## Recoding variables 
+
+
+```{r recoding categorical varibles}
+
+
+
+data$Nature_milk1 <-recode(data$Nature_milk,"'z-missing'='0z-missing'")
+
+data$Type_container2<-recode(data$Type_container1,"'Tin'='0Tin'")
+
+data$Type_container3<-recode(data$Type_container1,"'Aluminium'='0Aluminium'")
+
+
+```
+
+
+
+
+
+## Chi-square test for S. aureus
+
+```{r performing ch-squared test between the variables and presence/absence of S. aureus}
+
+fisher.test(data$S..aureus, data$Type_Trader1)
+fisher.test(data$S..aureus, data$Nature_milk)
+fisher.test(data$S..aureus, data$Type_container1)
+
+```
+
+
+
+
+
+
+
+
+
+## Chi-square test for E..coli
+
+```{r performing ch-squared test between the variables and presence/absence of E..coli}
+
+fisher.test(data$E..coli, data$Type_Trader1)
+fisher.test(data$E..coli, data$Nature_milk)
+fisher.test(data$E..coli, data$Type_container1)
+
+```
+
+
+
+
+## Chi-square test for E..coli.O157
+
+```{r performing ch-squared test between the variables and presence/absence of E..coli.O157}
+
+fisher.test(data$E..coli.O157, data$Type_Trader1)
+fisher.test(data$E..coli.O157, data$Nature_milk)
+fisher.test(data$E..coli.O157, data$Type_container1)
+
+```
+
+table(data$E..coli.O157,data$Type_container1)
+fisher.test(data$E..coli.O157,data$Type_container1)
+
+
+## Chi-square test for E..coli.O157.EAE
+
+```{r performing ch-squared test between the variables and presence/absence of E..coli.O157.EAE}
+
+fisher.test(data$E..coli.O157.EAE, data$Type_Trader1)
+fisher.test(data$E..coli.O157.EAE, data$Nature_milk)
+fisher.test(data$E..coli.O157.EAE, data$Type_container1)
+
+```
+
+
+table(data$E..coli.O157.EAE,data$Type_container1)
+fisher.test(data$E..coli.O157.EAE,data$Type_container1)
+
+
+
+
+## Chi-square test for E..coli.O157.STX1 (Positives n=0)
+
+```{r performing ch-squared test between the variables and presence/absence of E..coli.O157.STX1}
+
+fisher.test(data$E..coli.O157.STX1, data$Type_Trader1)
+fisher.test(data$E..coli.O157.STX1, data$Nature_milk)
+fisher.test(data$E..coli.O157.STX1, data$Type_container1)
+
+```
+
+
+
+
+## Chi-square test for E..coli.O157.STX2
+
+```{r performing ch-squared test between the variables and presence/absence of E..coli.O157.STX2}
+
+fisher.test(data$E..coli.O157.STX2, data$Type_Trader1)
+fisher.test(data$E..coli.O157.STX2, data$Nature_milk)
+fisher.test(data$E..coli.O157.STX2, data$Type_container1)
+
+```
+
+
+
+table(data$E..coli.O157.STX2,data$Type_Trader1)
+fisher.test(data$E..coli.O157.STX2,data$Type_Trader1)
+
+
+
+## Chi-square test for Listeria.monocytogenes
+
+```{r performing ch-squared test between the variables and presence/absence of Listeria.monocytogenes}
+
+fisher.test(data$Listeria.monocytogenes, data$Type_Trader1)
+fisher.test(data$Listeria.monocytogenes, data$Nature_milk)
+fisher.test(data$Listeria.monocytogenes, data$Type_container1)
+
+```
+
+
+
+
+## Chi-square test for Salmonella.enterobacter
+
+```{r performing ch-squared test between the variables and presence/absence of Salmonella.enterobacter}
+
+fisher.test(data$Salmonella.enterobacter, data$Type_Trader1)
+fisher.test(data$Salmonella.enterobacter, data$Nature_milk)
+fisher.test(data$Salmonella.enterobacter, data$Type_container1)
+
+```
+
+
+table(data$Salmonella.enterobacter,data$Nature_milk)
+fisher.test(data$Salmonella.enterobacter,data$Nature_milk)
+
+
+
+
+## Chi-square test for Yersinia.enterocolitica
+
+```{r performing ch-squared test between the variables and presence/absence of Yersinia.enterocolitica}
+
+fisher.test(data$Yersinia.enterocolitica, data$Type_Trader1)
+fisher.test(data$Yersinia.enterocolitica, data$Nature_milk)
+fisher.test(data$Yersinia.enterocolitica, data$Type_container1)
+
+```
+
+
+table(data$Yersinia.enterocolitica,data$Nature_milk)
+fisher.test(data$Yersinia.enterocolitica,data$Nature_milk)
+
+
+table(data$Yersinia.enterocolitica,data$Type_container1)
+fisher.test(data$Yersinia.enterocolitica,data$Type_container1)
+
+
+
+
+## Univariable analysis for S..aureus
+
+
+
+## S..aureus (Type_Trader1)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(S..aureus~Type_Trader1, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## S..aureus (Nature_milk)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(S..aureus~Nature_milk, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## S..aureus (Type_container1)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(S..aureus~Type_container1, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+
+
+
+## S..aureus (T._milk_market)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(S..aureus~T._milk_market, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## S..aureus (Store_shop)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(S..aureus~factor(Store_shop), family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## Univariable analysis for E..coli
+
+
+
+## E..coli (Type_Trader1)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~Type_Trader1, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## E..coli (Nature_milk)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~Nature_milk, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## E..coli (Type_container1)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~Type_container1, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+
+## E..coli (T._milk_market)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~T._milk_market, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E..coli (Store_shop)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli~factor(Store_shop), family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+
+## Univariable analysis for E..coli.O157
+
+
+
+## E..coli.O157 (Type_Trader1)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~Type_Trader1, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## E..coli.O157 (Nature_milk)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~Nature_milk, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## E..coli.O157 (Type_container1)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~Type_container1, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## E..coli.O157 (T._milk_market)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~T._milk_market, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## E..coli.O157 (Store_shop)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(E..coli.O157~factor(Store_shop), family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+
+## Univariable analysis for Yersinia.enterocolitica
+
+
+
+## Yersinia.enterocolitica (Type_Trader1)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~Type_Trader1, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## Yersinia.enterocolitica (Nature_milk)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~Nature_milk1, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## Yersinia.enterocolitica (Type_container2)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~Type_container2, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+
+## Yersinia.enterocolitica (T._milk_market)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~T._milk_market, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+## Yersinia.enterocolitica (Store_shop)
+
+```{r calculating multivariable logistic regression}
+
+mult.glmer<-glm(Yersinia.enterocolitica~factor(Store_shop), family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+       
+```
+
+
+
+## Multivariable analysis for E..coli
+
+```{r calculating multivariable logistic regression}
+
+
+# data$Nature_milk[data$Nature_milk == ""] <- NA
+
+ mult.glmer<-glm(E..coli~Nature_milk, family = binomial(), data=data)
+
+
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+ confint(mult.glmer)
+
+ drop1(mult.glmer, test = "Chisq")
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Multivariable analysis for E..coli.O157
+
+```{r calculating multivariable logistic regression}
+
+#  data$Type_container1[data$Type_container1 == ""] <- NA
+
+ mult.glmer<-glm(E..coli.O157~Type_container1, family = binomial(), data=data)
+
+
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+ confint(mult.glmer)
+
+ drop1(mult.glmer, test = "Chisq")
+
+
+```
+
+
+
+
+
+
+
+
+## Multivariable analysis for Yersinia.enterocolitica
+
+```{r calculating multivariable logistic regression}
+
+
+data$Nature_milk[data$Nature_milk == ""] <- NA
+
+data$Type_container2[data$Type_container1 == ""] <- NA
+
+# mult.glmer<-glm(Yersinia.enterocolitica~Nature_milk, family = binomial(), data=data)
+
+ mult.glmer<-glm(Yersinia.enterocolitica~Nature_milk+factor(Store_shop), family = binomial(), data=data)
+
+# mult.glmer<-glm(Yersinia.enterocolitica~Nature_milk1+Store_shop, family = binomial(), data=data)
+
+data$Type_container2[data$Type_container2 == ""] <- NA
+
+# mult.glmer<-glm(Yersinia.enterocolitica~Nature_milk, family = binomial(), data=data)
+
+summary(mult.glmer)
+Anova(mult.glmer)
+
+confint(mult.glmer)
+
+drop1(mult.glmer, test = "Chisq")
+
+
+```
+
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
